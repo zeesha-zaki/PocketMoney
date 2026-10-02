@@ -9,7 +9,7 @@ class AppController extends ChangeNotifier {
   late Box _box;
   List<Txn> txns = [];
   List<Goal> goals = [];
-  int weekly = 5000;
+  int monthly = 20000;
   bool dark = true;
 
   Future<void> init() async {
@@ -22,12 +22,12 @@ class AppController extends ChangeNotifier {
   void _apply(Map j) {
     txns = (j['txns'] as List).map((e) => Txn.fromJson(Map<String, dynamic>.from(e))).toList();
     goals = (j['goals'] as List).map((e) => Goal.fromJson(Map<String, dynamic>.from(e))).toList();
-    weekly = j['weekly'] ?? 5000;
+    monthly = j['monthly'] ?? (j['weekly'] != null ? j['weekly'] * 4 : 20000);
     dark = j['dark'] ?? true;
     txns.sort((a, b) => b.date.compareTo(a.date));
   }
 
-  Map<String, dynamic> toJson() => {'txns': txns.map((e) => e.toJson()).toList(), 'goals': goals.map((e) => e.toJson()).toList(), 'weekly': weekly, 'dark': dark};
+  Map<String, dynamic> toJson() => {'txns': txns.map((e) => e.toJson()).toList(), 'goals': goals.map((e) => e.toJson()).toList(), 'monthly': monthly, 'dark': dark};
   String export() => const JsonEncoder.withIndent('  ').convert(toJson());
   bool import(String s) {
     try {
@@ -49,13 +49,13 @@ class AppController extends ChangeNotifier {
   // ---- derived ----
   int get balance => txns.fold(0, (s, t) => s + (t.isIncome ? t.amount : -t.amount));
   int get savedSoFar => goals.fold(0, (s, g) => s + g.saved);
-  DateTime get weekStart {
+  DateTime get monthStart {
     final n = DateTime.now();
-    return DateTime(n.year, n.month, n.day).subtract(Duration(days: n.weekday - 1));
+    return DateTime(n.year, n.month, 1);
   }
 
-  int get spentThisWeek => txns.where((t) => !t.isIncome && t.category != 'Savings' && !t.date.isBefore(weekStart)).fold(0, (s, t) => s + t.amount);
-  int get weekLeft => weekly - spentThisWeek;
+  int get spentThisMonth => txns.where((t) => !t.isIncome && t.category != 'Savings' && !t.date.isBefore(monthStart)).fold(0, (s, t) => s + t.amount);
+  int get monthLeft => monthly - spentThisMonth;
 
   Map<String, int> get spendByCategory {
     final m = <String, int>{};
@@ -66,19 +66,21 @@ class AppController extends ChangeNotifier {
   }
 
   Pace get pace {
-    final elapsed = (DateTime.now().weekday - 0.5) / 7;
-    final r = weekly == 0 ? 2 : spentThisWeek / (weekly * elapsed);
+    final n = DateTime.now();
+    final days = DateTime(n.year, n.month + 1, 0).day;
+    final elapsed = (n.day - 0.5) / days;
+    final r = monthly == 0 ? 2 : spentThisMonth / (monthly * elapsed);
     return r < 0.8 ? Pace.safe : (r < 1.1 ? Pace.balanced : Pace.fast);
   }
 
-  /// % of weekly allowance the purchase would exceed (<=0 means safe)
-  double overBudgetPct(int price) => weekly == 0 ? 100 : (price - weekLeft) / weekly * 100;
+  /// % of monthly allowance the purchase would exceed (<=0 means safe)
+  double overBudgetPct(int price) => monthly == 0 ? 100 : (price - monthLeft) / monthly * 100;
 
-  /// Estimated days to finish goal using avg weekly surplus over last 28 days.
+  /// Estimated days to finish goal using avg daily surplus over last 28 days.
   int? etaDays(Goal g) {
     final since = DateTime.now().subtract(const Duration(days: 28));
     final spent = txns.where((t) => !t.isIncome && t.category != 'Savings' && t.date.isAfter(since)).fold(0, (s, t) => s + t.amount);
-    final surplusPerDay = (weekly - spent / 4) / 7;
+    final surplusPerDay = monthly / 30 - spent / 28;
     if (surplusPerDay <= 0) return null;
     return ((g.target - g.saved) / surplusPerDay).ceil();
   }
@@ -111,8 +113,8 @@ class AppController extends ChangeNotifier {
     addTxn(amount: amount, income: false, category: 'Savings', note: '→ ${g.name}', date: DateTime.now());
   }
 
-  void setWeekly(int v) {
-    weekly = v;
+  void setMonthly(int v) {
+    monthly = v;
     _save();
   }
 
