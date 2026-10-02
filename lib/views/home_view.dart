@@ -32,9 +32,9 @@ class HomeView extends StatelessWidget {
       ),
       const SizedBox(height: 12),
       Row(children: [
-        _stat('Spent This Week', pkr(c.spentThisWeek), coral),
+        _stat('Spent This Month', pkr(c.spentThisMonth), coral),
         const SizedBox(width: 8),
-        _stat('Weekly Allowance', pkr(c.weekly), mint),
+        _stat('Monthly Allowance', pkr(c.monthly), mint),
         const SizedBox(width: 8),
         _stat('Saved So Far', pkr(c.savedSoFar), lavender),
       ]),
@@ -100,7 +100,7 @@ class _AffordWidgetState extends State<AffordWidget> {
         ),
         if (price > 0) ...[
           const SizedBox(height: 12),
-          AnimatedBar(price / (widget.c.weekLeft <= 0 ? 1 : widget.c.weekLeft), color),
+          AnimatedBar(price / (widget.c.monthLeft <= 0 ? 1 : widget.c.monthLeft), color),
           const SizedBox(height: 8),
           Pill(
               price > widget.c.balance
