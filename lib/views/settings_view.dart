@@ -18,16 +18,16 @@ class SettingsView extends StatelessWidget {
         child: Column(children: [
           SwitchListTile(title: const Text('Dark mode'), value: c.dark, activeColor: mint, onChanged: (_) => c.toggleDark()),
           ListTile(
-            title: const Text('Weekly allowance'),
-            trailing: Text(pkr(c.weekly), style: const TextStyle(color: mint, fontWeight: FontWeight.w800)),
+            title: const Text('Monthly allowance'),
+            trailing: Text(pkr(c.monthly), style: const TextStyle(color: mint, fontWeight: FontWeight.w800)),
             onTap: () {
-              final t = TextEditingController(text: '${c.weekly}');
+              final t = TextEditingController(text: '${c.monthly}');
               showDialog(
                 context: context,
                 builder: (_) => AlertDialog(
-                  title: const Text('Weekly allowance'),
+                  title: const Text('Monthly allowance'),
                   content: TextField(controller: t, keyboardType: TextInputType.number, decoration: const InputDecoration(prefixText: 'Rs. ')),
-                  actions: [FilledButton(onPressed: () { c.setWeekly(int.tryParse(t.text) ?? c.weekly); Navigator.pop(context); }, child: const Text('Save'))],
+                  actions: [FilledButton(onPressed: () { c.setMonthly(int.tryParse(t.text) ?? c.monthly); Navigator.pop(context); }, child: const Text('Save'))],
                 ),
               );
             },
